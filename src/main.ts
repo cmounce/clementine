@@ -19,7 +19,25 @@ const ta2 = document.getElementById('ta2') as HTMLTextAreaElement;
 function bind(text: Y.Text, el: HTMLTextAreaElement) {
   el.value = text.toString();
 
-  const handle = () => {
+  const getRelative = () => [
+    Y.createRelativePositionFromTypeIndex(text, el.selectionStart),
+    Y.createRelativePositionFromTypeIndex(text, el.selectionEnd),
+  ];
+  let [selectionStart, selectionEnd] = getRelative();
+  const getAbsolute = () => [
+    Y.createAbsolutePositionFromRelativePosition(selectionStart, text.doc!),
+    Y.createAbsolutePositionFromRelativePosition(selectionEnd, text.doc!),
+  ];
+
+  const saveSelection = () => {
+    [selectionStart, selectionEnd] = getRelative();
+  };
+  el.addEventListener('selectionchange', saveSelection);
+  el.addEventListener('click', saveSelection);
+  el.addEventListener('keyup', saveSelection);
+  el.addEventListener('mouseup', saveSelection);
+
+  const handleInput = () => {
     let prev = text.toString();
     let curr = el.value;
     let i = 0;
@@ -39,15 +57,17 @@ function bind(text: Y.Text, el: HTMLTextAreaElement) {
     text.doc!.transact(() => {
       text.delete(offset, prev.length);
       text.insert(offset, curr);
+      saveSelection();
     });
   };
 
-  el.addEventListener('input', (_ev) => {
-    handle();
-  });
+  el.addEventListener('input', handleInput);
 
   text.doc!.on('update', () => {
     el.value = text.toString();
+    const [newStart, newEnd] = getAbsolute().map((x) => x?.index);
+    el.selectionStart = newStart ?? el.selectionStart;
+    el.selectionEnd = newEnd ?? el.selectionEnd;
   });
 }
 

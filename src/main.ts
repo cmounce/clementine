@@ -5,8 +5,8 @@ import * as Y from 'yjs';
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
 app.innerHTML = `
-  <h1>Story Editor</h1>
-  <p>Your TypeScript + Vite app is ready!</p>
+  <h1>Synced editors</h1>
+  <p>Network delay (simulated) of 2.5 to 5 seconds.</p>
   <textarea id="ta1" rows=10 cols=80></textarea>
   <br>
   <br>
@@ -19,23 +19,26 @@ const ta2 = document.getElementById('ta2') as HTMLTextAreaElement;
 function bind(text: Y.Text, el: HTMLTextAreaElement) {
   el.value = text.toString();
 
-  const getRelative = () => [
-    Y.createRelativePositionFromTypeIndex(text, el.selectionStart),
-    Y.createRelativePositionFromTypeIndex(text, el.selectionEnd),
-  ];
-  let [selectionStart, selectionEnd] = getRelative();
-  const getAbsolute = () => [
-    Y.createAbsolutePositionFromRelativePosition(selectionStart, text.doc!),
-    Y.createAbsolutePositionFromRelativePosition(selectionEnd, text.doc!),
-  ];
-
-  const saveSelection = () => {
-    [selectionStart, selectionEnd] = getRelative();
-  };
+  // When the selection changes, persist its relative location
+  let savedSelection: Y.RelativePosition[];
+  const saveSelection = () =>
+    (savedSelection = [el.selectionStart, el.selectionEnd].map((i) =>
+      Y.createRelativePositionFromTypeIndex(text, i)
+    ));
+  saveSelection();
   el.addEventListener('selectionchange', saveSelection);
   el.addEventListener('click', saveSelection);
   el.addEventListener('keyup', saveSelection);
   el.addEventListener('mouseup', saveSelection);
+
+  // When the doc/textarea updates, set selection to the equivalent of what it was before
+  const restoreSelection = () => {
+    const [newStart, newEnd] = savedSelection.map(
+      (x) => Y.createAbsolutePositionFromRelativePosition(x, text.doc!)?.index
+    );
+    el.selectionStart = newStart ?? el.selectionStart;
+    el.selectionEnd = newEnd ?? el.selectionEnd;
+  };
 
   const handleInput = () => {
     let prev = text.toString();
@@ -65,9 +68,7 @@ function bind(text: Y.Text, el: HTMLTextAreaElement) {
 
   text.doc!.on('update', () => {
     el.value = text.toString();
-    const [newStart, newEnd] = getAbsolute().map((x) => x?.index);
-    el.selectionStart = newStart ?? el.selectionStart;
-    el.selectionEnd = newEnd ?? el.selectionEnd;
+    restoreSelection();
   });
 }
 

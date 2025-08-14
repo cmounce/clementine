@@ -33,3 +33,9 @@ h1 {
   font-size: 3.2em;
   line-height: 1.1;
 }
+
+textarea {
+  width: 100%;
+  max-width: 80ch;
+  box-sizing: border-box;
+}

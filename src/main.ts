@@ -7,10 +7,10 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <h1>Synced editors</h1>
   <p>Network delay (simulated) of 2.5 to 5 seconds.</p>
-  <textarea id="ta1" rows=10 cols=80></textarea>
+  <textarea id="ta1" rows=10></textarea>
   <br>
   <br>
-  <textarea id="ta2" rows=10 cols=80></textarea>
+  <textarea id="ta2" rows=10></textarea>
 `;
 
 const ta1 = document.getElementById('ta1') as HTMLTextAreaElement;

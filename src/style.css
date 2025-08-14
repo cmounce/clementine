@@ -35,7 +35,17 @@ h1 {
 }
 
 textarea {
-  width: 100%;
-  max-width: 80ch;
+  width: 80ch;
   box-sizing: border-box;
+}
+
+.cm-editor {
+  text-align: left;
+  background-color: white;
+  color: black;
+}
+
+.cm-editor .cm-content {
+  min-height: 14lh;
+  max-width: 80ch;
 }

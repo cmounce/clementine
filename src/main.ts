@@ -1,6 +1,14 @@
 import _ from 'lodash';
 import './style.css';
 import * as Y from 'yjs';
+import { yCollab } from 'y-codemirror.next';
+import { EditorState } from '@codemirror/state';
+import { keymap, EditorView } from '@codemirror/view';
+import {
+  defaultHighlightStyle,
+  syntaxHighlighting,
+} from '@codemirror/language';
+import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
@@ -11,7 +19,31 @@ app.innerHTML = `
   <br>
   <br>
   <textarea id="ta2" rows=10></textarea>
+  <br>
+  <br>
 `;
+
+const xdoc = new Y.Doc();
+const state = EditorState.create({
+  doc: xdoc.getText().toString(),
+  extensions: [
+    // drawSelection(),
+    EditorView.lineWrapping,
+    // EditorView.theme(
+    //   {
+    //     '&': {
+    //       maxWidth: '80ch',
+    //       width: '100%'
+    //     }
+    //   }
+    // ),
+    history(),
+    keymap.of([...defaultKeymap, ...historyKeymap]),
+    syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+    yCollab(xdoc.getText(), null),
+  ],
+});
+new EditorView({ state, parent: app });
 
 const ta1 = document.getElementById('ta1') as HTMLTextAreaElement;
 const ta2 = document.getElementById('ta2') as HTMLTextAreaElement;

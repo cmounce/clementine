@@ -1,4 +1,6 @@
 {
+  "extends": "@tsconfig/svelte/tsconfig.json",
+
   "compilerOptions": {
     "target": "es2022",
     "useDefineForClassFields": true,

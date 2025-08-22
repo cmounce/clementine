@@ -13,18 +13,17 @@
     "format": "prettier --write ."
   },
   "devDependencies": {
-    "@tsconfig/svelte": "^5.0.4",
     "@types/lodash": "^4.17.20",
     "@types/node": "24.3.0",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2",
-    "vite": "^7.1.1"
+    "vite": "^7.1.1",
+    "vite-plugin-solid": "^2.10.2"
   },
   "dependencies": {
-    "@sveltejs/vite-plugin-svelte": "^6.1.2",
     "codemirror": "^6.0.2",
     "lodash": "^4.17.21",
-    "svelte": "^5.38.1",
+    "solid-js": "^1.9.2",
     "y-codemirror.next": "^0.3.5",
     "yjs": "^13.6.27"
   }

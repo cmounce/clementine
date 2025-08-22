@@ -1,0 +1,11 @@
+.file {
+  border: none;
+  background: none;
+  text-align: left;
+  width: 100%;
+}
+
+.file:hover {
+  cursor: pointer;
+  background-color: #ddd;
+}

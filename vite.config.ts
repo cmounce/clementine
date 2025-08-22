@@ -1,5 +1,5 @@
-import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { defineConfig } from 'vite';
+import solidPlugin from 'vite-plugin-solid';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -20,5 +20,5 @@ export default defineConfig({
   server: {
     port: 3000,
   },
-  plugins: [svelte()],
+  plugins: [solidPlugin()],
 });

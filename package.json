@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "codemirror": "^6.0.2",
+    "idb": "^8.0.3",
     "lodash": "^4.17.21",
     "solid-js": "^1.9.2",
     "y-codemirror.next": "^0.3.5",

@@ -8,17 +8,20 @@ import {
 } from '@codemirror/language';
 import { yCollab } from 'y-codemirror.next';
 import { onCleanup, onMount } from 'solid-js';
+import { syncDoc } from '../sync';
 
 interface EditorProps {
   file: string;
 }
 
 function Editor(props: EditorProps) {
+  let doc: Y.Doc;
   let editorDiv;
   let editorView: EditorView;
 
   onMount(() => {
-    const doc = new Y.Doc();
+    doc = new Y.Doc();
+    syncDoc(props.file, doc);
     const state = EditorState.create({
       doc: doc.getText().toString(),
       extensions: [
@@ -32,7 +35,10 @@ function Editor(props: EditorProps) {
     editorView = new EditorView({ state, parent: editorDiv });
   });
 
-  onCleanup(() => editorView?.destroy());
+  onCleanup(() => {
+    editorView?.destroy();
+    doc?.destroy();
+  });
 
   return (
     <div>

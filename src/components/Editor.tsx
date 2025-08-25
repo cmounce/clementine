@@ -46,16 +46,9 @@ function Editor(props: EditorProps) {
   });
 
   return (
-    <div>
-      <p>You are editing {props.file}.</p>
-      <Show when={syncedDoc()}>
-        <div
-          ref={editorDiv}
-          class="editor-component"
-          style={{ border: '1px solid black' }}
-        />
-      </Show>
-    </div>
+    <Show when={syncedDoc()}>
+      <div ref={editorDiv} class="editor-component" />
+    </Show>
   );
 }
 

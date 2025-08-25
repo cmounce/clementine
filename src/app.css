@@ -1,0 +1,27 @@
+body {
+  margin: 0;
+}
+
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.navbar {
+  height: 2.5lh;
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  flex-shrink: 0;
+  background-color: #cde;
+}
+
+.editor-component {
+  flex: 1;
+  overflow: hidden;
+}
+
+.editor-component .cm-editor {
+  height: 100%;
+}

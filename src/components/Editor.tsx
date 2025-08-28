@@ -1,5 +1,5 @@
 import { EditorState } from '@codemirror/state';
-import { keymap, EditorView } from '@codemirror/view';
+import { keymap, EditorView, scrollPastEnd } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import {
   defaultHighlightStyle,
@@ -33,6 +33,7 @@ function Editor(props: EditorProps) {
         EditorView.lineWrapping,
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
+        scrollPastEnd(),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         yCollab(ydoc.getText(), null),
       ],

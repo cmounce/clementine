@@ -31,6 +31,10 @@ function Editor(props: EditorProps) {
       doc: ydoc.getText().toString(),
       extensions: [
         EditorView.lineWrapping,
+        EditorView.contentAttributes.of({
+          autocapitalize: 'sentences',
+          autocorrect: 'on',
+        }),
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         scrollPastEnd(),

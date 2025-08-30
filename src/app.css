@@ -9,10 +9,11 @@ body {
 }
 
 .navbar {
-  height: 2.5lh;
+  height: 1.5rem;
   display: flex;
   align-items: center;
-  gap: 1em;
+  padding: 0.5rem;
+  gap: 1rem;
   flex-shrink: 0;
   background-color: #cde;
 }

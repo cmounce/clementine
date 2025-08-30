@@ -1,21 +1,22 @@
-import { For, type Accessor, type Setter } from 'solid-js';
+import { For, onMount } from 'solid-js';
 import './Chooser.css';
+import { useNavbar } from './App';
+import { useNavigate } from '@solidjs/router';
 
-interface ChooserProps {
-  file: Accessor<string | null>;
-  setFile: Setter<string | null>;
-}
+function Chooser() {
+  const navigate = useNavigate();
+  const { setFileId } = useNavbar();
+  onMount(() => setFileId(null));
 
-function Chooser(props: ChooserProps) {
   const files = ['foo', 'bar', 'baz'];
 
   return (
     <>
       <For each={files}>
         {(availableFile) => (
-          <button class="file" onclick={() => props.setFile(availableFile)}>
+          <button class="file" onclick={() => navigate(`doc/${availableFile}`)}>
             {availableFile}
-            {availableFile === props.file() ? '(*)' : ''}
+            {/* {availableFile === props.file() ? '(*)' : ''} */}
           </button>
         )}
       </For>

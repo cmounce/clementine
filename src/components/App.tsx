@@ -1,25 +1,55 @@
-import { createSignal, Show } from 'solid-js';
+import {
+  createContext,
+  createSignal,
+  Show,
+  useContext,
+  type Accessor,
+  type Setter,
+} from 'solid-js';
 import Chooser from './Chooser';
 import Editor from './Editor';
+import { HashRouter, Route, useNavigate } from '@solidjs/router';
 
-function App() {
-  const [currentFile, setCurrentFile] = createSignal<string | null>(null);
+interface NavbarProps {
+  fileId: Accessor<string | null>;
+  setFileId: Setter<string | null>;
+}
+
+const NavbarContext = createContext<NavbarProps>();
+
+export function useNavbar(): NavbarProps {
+  const result = useContext(NavbarContext);
+  if (!result) {
+    throw new Error('NavbarContext not set');
+  }
+  return result;
+}
+
+function Layout(props: any) {
+  const navigate = useNavigate();
+  const [fileId, setFileId] = createSignal<string | null>(null);
 
   return (
-    <div class="app">
-      <div class="navbar">
-        <Show when={currentFile() !== null}>
-          <button onclick={() => setCurrentFile(null)}>Back</button>
-        </Show>
-        <div class="title">{currentFile() ?? 'Choose a file'}</div>
+    <NavbarContext.Provider value={{ fileId, setFileId }}>
+      <div class="app">
+        <div class="navbar">
+          <Show when={fileId() !== null}>
+            <button onclick={() => navigate('/')}>Back</button>
+          </Show>
+          <div class="title">{fileId() ?? 'Choose a file'}</div>
+        </div>
+        {props.children}
       </div>
-      <Show
-        when={currentFile()}
-        fallback={<Chooser file={currentFile} setFile={setCurrentFile} />}
-      >
-        <Editor file={currentFile()!} />
-      </Show>
-    </div>
+    </NavbarContext.Provider>
+  );
+}
+
+function App() {
+  return (
+    <HashRouter root={Layout}>
+      <Route path="" component={Chooser} />
+      <Route path="doc/:id" component={Editor} />
+    </HashRouter>
   );
 }
 

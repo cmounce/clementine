@@ -6,19 +6,27 @@ import {
   syntaxHighlighting,
 } from '@codemirror/language';
 import { yCollab } from 'y-codemirror.next';
-import { createEffect, createResource, onCleanup, Show } from 'solid-js';
+import {
+  createEffect,
+  createResource,
+  onCleanup,
+  onMount,
+  Show,
+} from 'solid-js';
 import { LocalDocument } from '../sync';
+import { useNavbar } from './App';
+import { useParams } from '@solidjs/router';
 
-interface EditorProps {
-  file: string;
-}
+function Editor() {
+  const { id: fileId } = useParams();
+  const { setFileId } = useNavbar();
+  onMount(() => {
+    setFileId(fileId);
+  });
 
-function Editor(props: EditorProps) {
   let editorDiv;
   let editorView: EditorView;
-  const [syncedDoc] = createResource(async () =>
-    LocalDocument.load(props.file)
-  );
+  const [syncedDoc] = createResource(async () => LocalDocument.load(fileId));
 
   createEffect(() => {
     const doc = syncedDoc();

@@ -9,6 +9,8 @@ import {
 import Chooser from './Chooser';
 import Editor from './Editor';
 import { HashRouter, Route, useNavigate } from '@solidjs/router';
+import { defaultVault } from '../sync';
+import * as Y from 'yjs';
 
 interface NavbarProps {
   fileId: Accessor<string | null>;
@@ -28,6 +30,17 @@ export function useNavbar(): NavbarProps {
 function Layout(props: any) {
   const navigate = useNavigate();
   const [fileId, setFileId] = createSignal<string | null>(null);
+  const title = () => {
+    const id = fileId();
+    if (id === null) {
+      return null;
+    } else {
+      return (defaultVault.doc.getMap() as Y.Map<any>)
+        .get('docs')
+        .get(id)
+        .get('title') as string;
+    }
+  };
 
   return (
     <NavbarContext.Provider value={{ fileId, setFileId }}>
@@ -36,7 +49,7 @@ function Layout(props: any) {
           <Show when={fileId() !== null}>
             <button onclick={() => navigate('/')}>Back</button>
           </Show>
-          <div class="title">{fileId() ?? 'Choose a file'}</div>
+          <div class="title">{title() ?? 'Choose a file'}</div>
         </div>
         {props.children}
       </div>

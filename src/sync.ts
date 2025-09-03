@@ -19,21 +19,6 @@ const db = await openDB(DB_NAME, 3, {
   },
 });
 
-async function getOrCreateVault() {
-  const records = await db.getAll(VAULT_STORE);
-  if (records.length > 1) {
-    throw new Error(`Expected 1 vault record, got ${records.length}`);
-  } else if (records.length === 0) {
-    const key = generateId();
-    const value = { id: key };
-    await db.add(VAULT_STORE, value, key);
-    records.push(value);
-  }
-  return records[0];
-}
-
-await getOrCreateVault();
-
 export class LocalDocument {
   readonly id: string;
   readonly doc: Y.Doc;
@@ -46,6 +31,7 @@ export class LocalDocument {
 
     const flush = _.debounce(() => this.flush(), 1000);
     this.doc.on('update', (update: Uint8Array) => {
+      // TODO: Is this generating update events on load?
       this.updates.push(update);
       flush();
     });
@@ -56,6 +42,7 @@ export class LocalDocument {
       LOCAL_UPDATE_STORE,
       IDBKeyRange.bound([id, -Infinity], [id, Infinity])
     );
+    // console.log(`load(${id}): got ${updates.length} updates`);
     const result = new LocalDocument(id);
     Y.applyUpdate(result.doc, Y.mergeUpdates(updates));
     return result;
@@ -76,3 +63,60 @@ export class LocalDocument {
     this.doc.destroy();
   }
 }
+
+async function getOrCreateVaultDoc() {
+  const records = await db.getAll(VAULT_STORE);
+  if (records.length > 1) {
+    throw new Error(`Expected 1 vault record, got ${records.length}`);
+  } else if (records.length === 0) {
+    const key = generateId();
+    const value = { id: key };
+    await db.add(VAULT_STORE, value, key);
+    records.push(value);
+  }
+
+  const id = records[0].id as string;
+  if (!id) {
+    throw new Error("Vault record didn't have id");
+  }
+  const vault = await LocalDocument.load(id);
+  const vaultMap = vault.doc.getMap();
+  if (!vaultMap.has('id')) {
+    vaultMap.set('id', id);
+  }
+  if (!vaultMap.has('docs')) {
+    vaultMap.set('docs', new Y.Map());
+  }
+  return vault;
+}
+
+export const defaultVault = await getOrCreateVaultDoc();
+
+const docsMap = defaultVault.doc.getMap().get('docs') as Y.Map<any>;
+if (docsMap.size === 0) {
+  console.log('Running vault migration...');
+  for (const oldKey of ['foo', 'bar', 'baz']) {
+    const newId = generateId();
+    const docInfo = new Y.Map([['title', oldKey]]);
+    docsMap.set(newId, docInfo);
+
+    const tx = db.transaction(LOCAL_UPDATE_STORE, 'readwrite');
+    const recordKeys = (await tx.store.getAllKeys(
+      IDBKeyRange.bound([oldKey, -Infinity], [oldKey, Infinity])
+    )) as [string, number][];
+    console.log(
+      `Found ${recordKeys.length} records for old document key ${oldKey}`
+    );
+    for (const oldRecordKey of recordKeys) {
+      const record = await tx.store.get(oldRecordKey);
+      const newRecordKey = [newId, oldRecordKey[1]];
+      await tx.store.put(record, newRecordKey);
+    }
+    await tx.store.delete(
+      IDBKeyRange.bound([oldKey, -Infinity], [oldKey, Infinity])
+    );
+    tx.commit();
+  }
+}
+
+(window as any).Y = Y;

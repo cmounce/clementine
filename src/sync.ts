@@ -1,16 +1,38 @@
 import _ from 'lodash';
 import * as Y from 'yjs';
 import { openDB } from 'idb';
+import { generateId } from './util';
 
 const DB_NAME = 'synced-docs';
 const LOCAL_UPDATE_STORE = 'local-updates';
+const VAULT_STORE = 'vaults';
 
-const db = await openDB(DB_NAME, 2, {
+const db = await openDB(DB_NAME, 3, {
   upgrade(db, oldVersion, newVersion) {
     console.log(`Running upgrade from ${oldVersion} to ${newVersion}`);
-    db.createObjectStore(LOCAL_UPDATE_STORE);
+    if (oldVersion < 2) {
+      db.createObjectStore(LOCAL_UPDATE_STORE);
+    }
+    if (oldVersion < 3) {
+      db.createObjectStore(VAULT_STORE);
+    }
   },
 });
+
+async function getOrCreateVault() {
+  const records = await db.getAll(VAULT_STORE);
+  if (records.length > 1) {
+    throw new Error(`Expected 1 vault record, got ${records.length}`);
+  } else if (records.length === 0) {
+    const key = generateId();
+    const value = { id: key };
+    await db.add(VAULT_STORE, value, key);
+    records.push(value);
+  }
+  return records[0];
+}
+
+await getOrCreateVault();
 
 export class LocalDocument {
   readonly id: string;

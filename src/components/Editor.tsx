@@ -16,10 +16,11 @@ import {
 import { LocalDocument } from '../sync';
 import { useNavbar } from './App';
 import { useParams } from '@solidjs/router';
+import _ from 'lodash';
 
 function Editor() {
   const { id: fileId } = useParams();
-  const { setFileId } = useNavbar();
+  const { setFileId, setNumUpdates } = useNavbar();
   onMount(() => {
     setFileId(fileId);
   });
@@ -34,6 +35,14 @@ function Editor() {
       return;
     }
     const ydoc = doc.doc;
+
+    const refreshNumUpdates = _.debounce(() => {
+      setNumUpdates(doc.numUpdates);
+    }, 100);
+    setNumUpdates(doc.numUpdates);
+    doc.doc.on('update', () => {
+      setTimeout(refreshNumUpdates, 1500);
+    });
 
     const state = EditorState.create({
       doc: ydoc.getText().toString(),
@@ -54,6 +63,7 @@ function Editor() {
   });
 
   onCleanup(() => {
+    setNumUpdates(null);
     editorView?.destroy();
     syncedDoc()?.finish();
   });

@@ -18,6 +18,10 @@ body {
   background-color: #cde;
 }
 
+.navbar .info {
+  margin-left: auto;
+}
+
 .editor-component {
   flex: 1;
   overflow: hidden;

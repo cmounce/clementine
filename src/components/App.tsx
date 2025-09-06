@@ -15,6 +15,8 @@ import * as Y from 'yjs';
 interface NavbarProps {
   fileId: Accessor<string | null>;
   setFileId: Setter<string | null>;
+  numUpdates: Accessor<number | null>;
+  setNumUpdates: Setter<number | null>;
 }
 
 const NavbarContext = createContext<NavbarProps>();
@@ -30,6 +32,7 @@ export function useNavbar(): NavbarProps {
 function Layout(props: any) {
   const navigate = useNavigate();
   const [fileId, setFileId] = createSignal<string | null>(null);
+  const [numUpdates, setNumUpdates] = createSignal<number | null>(null);
   const title = () => {
     const id = fileId();
     if (id === null) {
@@ -43,13 +46,16 @@ function Layout(props: any) {
   };
 
   return (
-    <NavbarContext.Provider value={{ fileId, setFileId }}>
+    <NavbarContext.Provider
+      value={{ fileId, setFileId, numUpdates, setNumUpdates }}
+    >
       <div class="app">
         <div class="navbar">
           <Show when={fileId() !== null}>
             <button onclick={() => navigate('/')}>Back</button>
           </Show>
           <div class="title">{title() ?? 'Choose a file'}</div>
+          <div class="info">{numUpdates() ?? ''}</div>
         </div>
         {props.children}
       </div>

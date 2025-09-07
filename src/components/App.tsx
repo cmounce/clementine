@@ -10,6 +10,7 @@ import Chooser from './Chooser';
 import Editor from './Editor';
 import { HashRouter, Route, useNavigate } from '@solidjs/router';
 import { defaultVault } from '../sync';
+import { getDocsMap } from '../vault';
 
 interface NavbarProps {
   fileId: Accessor<string | null>;
@@ -32,12 +33,14 @@ function Layout(props: any) {
   const navigate = useNavigate();
   const [fileId, setFileId] = createSignal<string | null>(null);
   const [numUpdates, setNumUpdates] = createSignal<number | null>(null);
+  const docsMap = getDocsMap(defaultVault.doc);
+
   const title = () => {
     const id = fileId();
     if (id === null) {
       return null;
     } else {
-      return defaultVault.getDocInfo(id)?.title ?? '<invalid>';
+      return docsMap.get(id)?.get('title') ?? '<invalid>';
     }
   };
 

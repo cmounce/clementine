@@ -1,31 +1,27 @@
-import type { LocalDocument } from './sync';
 import * as Y from 'yjs';
 
-export class Vault {
-  doc: LocalDocument;
+export type VaultMap = TypedMap<VaultMapSchema>;
 
-  constructor(doc: LocalDocument) {
-    this.doc = doc;
-  }
+type VaultMapSchema = {
+  id: string;
+  docs: Y.Map<DocMap>;
+};
 
-  getDocInfo(id: string): DocInfo | null {
-    const docsEntry = this.getDocsMap().get(id);
-    if (!docsEntry) {
-      return null;
-    }
-    return {
-      title: docsEntry.get('title'),
-      tags: new Set(),
-    };
-  }
+export type DocMap = TypedMap<DocMapSchema>;
 
-  getDocsMap(): Y.Map<Y.Map<any>> {
-    const vaultMap = this.doc.doc.getMap();
-    return vaultMap.get('docs') as Y.Map<any>;
-  }
+type DocMapSchema = {
+  title: string;
+  tags: Y.Map<boolean>;
+};
+
+type TypedMap<T> = Omit<Y.Map<any>, 'get'> & {
+  get<K extends keyof T>(key: K): T[K];
+};
+
+export function getVaultMap(ydoc: Y.Doc): VaultMap {
+  return ydoc.getMap();
 }
 
-export interface DocInfo {
-  title: string;
-  tags: Set<string>;
+export function getDocsMap(ydoc: Y.Doc): Y.Map<DocMap> {
+  return getVaultMap(ydoc).get('docs');
 }

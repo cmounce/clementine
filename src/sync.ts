@@ -2,7 +2,7 @@ import _ from 'lodash';
 import * as Y from 'yjs';
 import { openDB } from 'idb';
 import { generateId } from './util';
-import { Vault } from './vault';
+import { getDocsMap, type DocMap } from './vault';
 
 const DB_NAME = 'synced-docs';
 const LOCAL_UPDATE_STORE = 'local-updates';
@@ -98,17 +98,18 @@ async function getOrCreateVaultDoc() {
   if (!vaultMap.has('docs')) {
     vaultMap.set('docs', new Y.Map());
   }
-  return new Vault(vault);
+  return vault;
 }
 
 export const defaultVault = await getOrCreateVaultDoc();
+// console.log(defaultVault.doc.getMap().toJSON())
 
-const docsMap = defaultVault.getDocsMap();
+const docsMap = getDocsMap(defaultVault.doc);
 if (docsMap.size === 0) {
   console.log('Running vault migration...');
   for (const oldKey of ['foo', 'bar', 'baz']) {
     const newId = generateId();
-    const docInfo = new Y.Map([['title', oldKey]]);
+    const docInfo = new Y.Map([['title', oldKey]]) as DocMap;
     docsMap.set(newId, docInfo);
 
     const tx = db.transaction(LOCAL_UPDATE_STORE, 'readwrite');

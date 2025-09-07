@@ -38,10 +38,7 @@ function Layout(props: any) {
     if (id === null) {
       return null;
     } else {
-      return (defaultVault.doc.getMap() as Y.Map<any>)
-        .get('docs')
-        .get(id)
-        .get('title') as string;
+      return defaultVault.getDocInfo(id)?.title ?? '<invalid>';
     }
   };
 

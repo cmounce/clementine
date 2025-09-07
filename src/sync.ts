@@ -26,15 +26,14 @@ export class LocalDocument {
   private updates: Uint8Array[];
   private totalUpdates: number;
 
-  constructor(id: string) {
+  private constructor(id: string, ydoc: Y.Doc) {
     this.id = id;
-    this.doc = new Y.Doc();
+    this.doc = ydoc;
     this.updates = [];
     this.totalUpdates = 0;
 
     const flush = _.debounce(() => this.flush(), 1000);
     this.doc.on('update', (update: Uint8Array) => {
-      // TODO: Is this generating update events on load?
       this.updates.push(update);
       flush();
     });
@@ -45,14 +44,17 @@ export class LocalDocument {
   }
 
   public static async load(id: string): Promise<LocalDocument> {
+    // Build Y.Doc from records on disk
     const updates: Uint8Array[] = await db.getAll(
       LOCAL_UPDATE_STORE,
       IDBKeyRange.bound([id, -Infinity], [id, Infinity])
     );
-    // console.log(`load(${id}): got ${updates.length} updates`);
-    const result = new LocalDocument(id);
+    const ydoc = new Y.Doc();
+    Y.applyUpdate(ydoc, Y.mergeUpdates(updates));
+
+    // Build LocalDocument instance
+    const result = new LocalDocument(id, ydoc);
     result.totalUpdates = updates.length;
-    Y.applyUpdate(result.doc, Y.mergeUpdates(updates));
     return result;
   }
 

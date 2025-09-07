@@ -10,7 +10,6 @@ import Chooser from './Chooser';
 import Editor from './Editor';
 import { HashRouter, Route, useNavigate } from '@solidjs/router';
 import { defaultVault } from '../sync';
-import * as Y from 'yjs';
 
 interface NavbarProps {
   fileId: Accessor<string | null>;

@@ -2,7 +2,7 @@ import _ from 'lodash';
 import * as Y from 'yjs';
 import { openDB } from 'idb';
 import { generateId } from './util';
-import { getDocsMap, type DocMap } from './vault';
+import { getDocsMap, getVaultMap, type DocMap } from './vault';
 
 const DB_NAME = 'synced-docs';
 const LOCAL_UPDATE_STORE = 'local-updates';
@@ -91,13 +91,22 @@ async function getOrCreateVaultDoc() {
     throw new Error("Vault record didn't have id");
   }
   const vault = await LocalDocument.load(id);
-  const vaultMap = vault.doc.getMap();
+  const vaultMap = getVaultMap(vault.doc);
   if (!vaultMap.has('id')) {
     vaultMap.set('id', id);
   }
   if (!vaultMap.has('docs')) {
     vaultMap.set('docs', new Y.Map());
   }
+
+  // Make sure each doc has tags
+  const docsMap = vaultMap.get('docs');
+  for (const docMap of docsMap.values()) {
+    if (!docMap.has('tags')) {
+      docMap.set('tags', new Y.Map());
+    }
+  }
+
   return vault;
 }
 

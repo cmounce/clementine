@@ -1,3 +1,10 @@
+.doc-info-modal {
+  width: clamp(5rem, 70vw, 30rem);
+  position: fixed;
+  left: 50vw;
+  transform: translateX(-50%);
+}
+
 .doc-info-modal .title {
   width: 100%;
   text-align: center;
@@ -13,7 +20,8 @@
 }
 
 .doc-info-modal input[type='text'] {
-  min-width: 20rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .doc-info-modal .buttons {

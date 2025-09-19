@@ -21,3 +21,13 @@
   cursor: pointer;
   background-color: #ddd;
 }
+
+.create-new {
+  display: flex;
+  flex-direction: row;
+  padding: 1rem;
+}
+
+.create-new button {
+  margin-left: auto;
+}

@@ -3,8 +3,10 @@ import './Chooser.css';
 import { useNavbar } from './App';
 import { A } from '@solidjs/router';
 import { defaultVault } from '../sync';
-import { getDocsMap } from '../vault';
+import { getDocsMap, type DocMap } from '../vault';
 import DocInfoDialog, { type DocInfo } from './DocInfoDialog';
+import { generateId } from '../util';
+import * as Y from 'yjs';
 
 function Chooser() {
   const { setFileId } = useNavbar();
@@ -28,10 +30,22 @@ function Chooser() {
   const [getDocInfo, setDocInfo] = createSignal<DocInfo | null>(null);
 
   const handleInfoUpdate = (info: DocInfo) => {
+    let doc: DocMap;
     if (info.id === null) {
-      throw new Error('Got null doc ID while updating doc info');
+      // Create a new doc
+      // TODO: Some of this should probably live in vault/doc shared code
+      doc = new Y.Map();
+      doc.set('title', '');
+      doc.set('tags', new Y.Map());
+      docsMap.set(generateId(), doc);
+    } else {
+      // Load an existing doc
+      const d = docsMap.get(info.id);
+      if (!d) {
+        throw new Error(`Couldn't load doc for info update: ${info.id}`);
+      }
+      doc = d;
     }
-    const doc = docsMap.get(info.id)!;
 
     // Update title
     if (doc.get('title') !== info.title) {
@@ -87,6 +101,16 @@ function Chooser() {
           </A>
         )}
       </For>
+      <div class="create-new">
+        <button
+          onClick={() => {
+            setDialogOpen(true);
+            setDocInfo({ id: null, title: '', tags: [] });
+          }}
+        >
+          Create new document&hellip;
+        </button>
+      </div>
     </>
   );
 }

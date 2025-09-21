@@ -9,3 +9,9 @@ export function generateId(): string {
     (int32) => BASE62_ALPHABET[int32 % BASE62_ALPHABET.length]
   ).join('');
 }
+
+export function assert(condition: any, message?: string): asserts condition {
+  if (!condition) {
+    throw new Error(message ?? `Assertion failed`);
+  }
+}

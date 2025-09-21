@@ -1,18 +1,32 @@
 import _ from 'lodash';
 import * as Y from 'yjs';
-import { openDB } from 'idb';
-import { generateId } from './util';
+import { openDB, type DBSchema } from 'idb';
+import { assert, generateId } from './util';
 import { getDocsMap, getVaultMap, type DocMap } from './vault';
 
 const DB_NAME = 'synced-docs';
-const LOCAL_UPDATE_STORE = 'local-updates';
+const LOCAL_DELTA_STORE = 'local-updates';
 const VAULT_STORE = 'vaults';
 
-const db = await openDB(DB_NAME, 3, {
+type LocalDeltaKey = [string, number];
+type VaultRecord = { id: string };
+
+interface DocsDatabase extends DBSchema {
+  [LOCAL_DELTA_STORE]: {
+    key: LocalDeltaKey;
+    value: Uint8Array;
+  };
+  [VAULT_STORE]: {
+    key: string;
+    value: VaultRecord;
+  };
+}
+
+const db = await openDB<DocsDatabase>(DB_NAME, 3, {
   upgrade(db, oldVersion, newVersion) {
     console.log(`Running upgrade from ${oldVersion} to ${newVersion}`);
     if (oldVersion < 2) {
-      db.createObjectStore(LOCAL_UPDATE_STORE);
+      db.createObjectStore(LOCAL_DELTA_STORE);
     }
     if (oldVersion < 3) {
       db.createObjectStore(VAULT_STORE);
@@ -46,7 +60,7 @@ export class LocalDocument {
   public static async load(id: string): Promise<LocalDocument> {
     // Build Y.Doc from records on disk
     const updates: Uint8Array[] = await db.getAll(
-      LOCAL_UPDATE_STORE,
+      LOCAL_DELTA_STORE,
       IDBKeyRange.bound([id, -Infinity], [id, Infinity])
     );
     const ydoc = new Y.Doc();
@@ -63,8 +77,8 @@ export class LocalDocument {
     this.updates = [];
     if (batch.length > 0) {
       const update = Y.mergeUpdates(batch);
-      const key = [this.id, new Date().valueOf()];
-      await db.add(LOCAL_UPDATE_STORE, update, key);
+      const key: LocalDeltaKey = [this.id, new Date().valueOf()];
+      await db.add(LOCAL_DELTA_STORE, update, key);
       this.totalUpdates += 1;
     }
   }
@@ -121,16 +135,17 @@ if (docsMap.size === 0) {
     const docInfo = new Y.Map([['title', oldKey]]) as DocMap;
     docsMap.set(newId, docInfo);
 
-    const tx = db.transaction(LOCAL_UPDATE_STORE, 'readwrite');
+    const tx = db.transaction(LOCAL_DELTA_STORE, 'readwrite');
     const recordKeys = (await tx.store.getAllKeys(
       IDBKeyRange.bound([oldKey, -Infinity], [oldKey, Infinity])
-    )) as [string, number][];
+    )) as LocalDeltaKey[];
     console.log(
       `Found ${recordKeys.length} records for old document key ${oldKey}`
     );
     for (const oldRecordKey of recordKeys) {
       const record = await tx.store.get(oldRecordKey);
-      const newRecordKey = [newId, oldRecordKey[1]];
+      assert(record, `Couldn't find old record ${oldRecordKey} to convert it`);
+      const newRecordKey: LocalDeltaKey = [newId, oldRecordKey[1]];
       await tx.store.put(record, newRecordKey);
     }
     await tx.store.delete(

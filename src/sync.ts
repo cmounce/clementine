@@ -5,8 +5,8 @@ import { assert, generateId } from './util';
 import { getDocsMap, getVaultMap, type DocMap } from './vault';
 
 const DB_NAME = 'synced-docs';
-const LOCAL_DELTA_STORE = 'local-updates';
-const VAULT_STORE = 'vaults';
+export const LOCAL_DELTA_STORE = 'local-updates';
+export const VAULT_STORE = 'vaults';
 
 type LocalDeltaKey = [string, number];
 type VaultRecord = { id: string };
@@ -22,7 +22,7 @@ interface DocsDatabase extends DBSchema {
   };
 }
 
-const db = await openDB<DocsDatabase>(DB_NAME, 3, {
+export const docsDb = await openDB<DocsDatabase>(DB_NAME, 3, {
   upgrade(db, oldVersion, newVersion) {
     console.log(`Running upgrade from ${oldVersion} to ${newVersion}`);
     if (oldVersion < 2) {
@@ -59,7 +59,7 @@ export class LocalDocument {
 
   public static async load(id: string): Promise<LocalDocument> {
     // Build Y.Doc from records on disk
-    const updates: Uint8Array[] = await db.getAll(
+    const updates: Uint8Array[] = await docsDb.getAll(
       LOCAL_DELTA_STORE,
       IDBKeyRange.bound([id, -Infinity], [id, Infinity])
     );
@@ -78,7 +78,7 @@ export class LocalDocument {
     if (batch.length > 0) {
       const update = Y.mergeUpdates(batch);
       const key: LocalDeltaKey = [this.id, new Date().valueOf()];
-      await db.add(LOCAL_DELTA_STORE, update, key);
+      await docsDb.add(LOCAL_DELTA_STORE, update, key);
       this.totalUpdates += 1;
     }
   }
@@ -90,13 +90,13 @@ export class LocalDocument {
 }
 
 async function getOrCreateVaultDoc() {
-  const records = await db.getAll(VAULT_STORE);
+  const records = await docsDb.getAll(VAULT_STORE);
   if (records.length > 1) {
     throw new Error(`Expected 1 vault record, got ${records.length}`);
   } else if (records.length === 0) {
     const key = generateId();
     const value = { id: key };
-    await db.add(VAULT_STORE, value, key);
+    await docsDb.add(VAULT_STORE, value, key);
     records.push(value);
   }
 
@@ -135,7 +135,7 @@ if (docsMap.size === 0) {
     const docInfo = new Y.Map([['title', oldKey]]) as DocMap;
     docsMap.set(newId, docInfo);
 
-    const tx = db.transaction(LOCAL_DELTA_STORE, 'readwrite');
+    const tx = docsDb.transaction(LOCAL_DELTA_STORE, 'readwrite');
     const recordKeys = (await tx.store.getAllKeys(
       IDBKeyRange.bound([oldKey, -Infinity], [oldKey, Infinity])
     )) as LocalDeltaKey[];

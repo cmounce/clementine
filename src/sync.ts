@@ -76,12 +76,15 @@ export class LocalDocument {
     const result = new LocalDocument(id, ydoc);
     result.totalUpdates = updates.length;
 
-    // Emit debug timings
-    const timings = [loadedMs, mergedMs, appliedMs].map((x) => x - startMs);
-    debugLog(
-      `Loaded ${updates.length} updates for doc ${id}, load/merge/apply timings in ms`,
-      timings
-    );
+    // Emit debug logs
+    const timings = [loadedMs - startMs, mergedMs - loadedMs, appliedMs - mergedMs];
+    const sizes = _.sortBy(updates.map((x) => x.length));
+    const quartiles = _.range(5).map((x) => {
+      const i = Math.round((sizes.length - 1) * (x / 4));
+      return sizes[i];
+    });
+    debugLog(`Doc ${id}: load/merge/apply timings in ms`, timings);
+    debugLog(`${updates.length} updates, quartiles in bytes`, quartiles);
     return result;
   }
 

@@ -60,6 +60,7 @@ async function initialLoad(id: string): Promise<State> {
   };
 }
 
+// @ts-ignore
 class BufferedWriter {
   private deltaBuffer: Uint8Array[];
   private docId: string;

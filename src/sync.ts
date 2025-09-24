@@ -3,6 +3,7 @@ import * as Y from 'yjs';
 import { openDB, type DBSchema } from 'idb';
 import { assert, generateId } from './util';
 import { getDocsMap, getVaultMap, type DocMap } from './vault';
+import { debugLog } from './components/Debug';
 
 const DB_NAME = 'synced-docs';
 export const LOCAL_DELTA_STORE = 'local-updates';
@@ -59,16 +60,28 @@ export class LocalDocument {
 
   public static async load(id: string): Promise<LocalDocument> {
     // Build Y.Doc from records on disk
+    const startMs = performance.now();
     const updates: Uint8Array[] = await docsDb.getAll(
       LOCAL_DELTA_STORE,
       IDBKeyRange.bound([id, -Infinity], [id, Infinity])
     );
+    const loadedMs = performance.now();
+    const mergedUpdate = Y.mergeUpdates(updates);
+    const mergedMs = performance.now();
     const ydoc = new Y.Doc();
-    Y.applyUpdate(ydoc, Y.mergeUpdates(updates));
+    Y.applyUpdate(ydoc, mergedUpdate);
+    const appliedMs = performance.now();
 
     // Build LocalDocument instance
     const result = new LocalDocument(id, ydoc);
     result.totalUpdates = updates.length;
+
+    // Emit debug timings
+    const timings = [loadedMs, mergedMs, appliedMs].map((x) => x - startMs);
+    debugLog(
+      `Loaded ${updates.length} updates for doc ${id}, load/merge/apply timings in ms`,
+      timings
+    );
     return result;
   }
 

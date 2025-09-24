@@ -11,6 +11,7 @@ import Editor from './Editor';
 import { HashRouter, Route, useNavigate } from '@solidjs/router';
 import { defaultVault } from '../sync';
 import { getDocsMap } from '../vault';
+import DebugView from './Debug';
 
 interface NavbarProps {
   fileId: Accessor<string | null>;
@@ -67,6 +68,7 @@ function App() {
     <HashRouter root={Layout}>
       <Route path="" component={Chooser} />
       <Route path="doc/:id" component={Editor} />
+      <Route path="debug" component={DebugView} />
     </HashRouter>
   );
 }

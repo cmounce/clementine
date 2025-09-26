@@ -13,10 +13,10 @@ import {
   onMount,
   Show,
 } from 'solid-js';
-import { LocalDocument } from '../sync';
 import { useNavbar } from './App';
 import { useParams } from '@solidjs/router';
 import _ from 'lodash';
+import { closeDoc, getDocStats, openDoc } from '../persistence';
 
 function Editor() {
   const { id: fileId } = useParams();
@@ -27,25 +27,25 @@ function Editor() {
 
   let editorDiv;
   let editorView: EditorView;
-  const [syncedDoc] = createResource(async () => LocalDocument.load(fileId));
+  const [syncedDoc] = createResource(async () => openDoc(fileId));
 
   createEffect(() => {
     const doc = syncedDoc();
     if (!doc) {
       return;
     }
-    const ydoc = doc.doc;
 
+    const getNumRecords = () => getDocStats(doc).numRecords;
     const refreshNumUpdates = _.debounce(() => {
-      setNumUpdates(doc.numUpdates);
+      setNumUpdates(getNumRecords());
     }, 100);
-    setNumUpdates(doc.numUpdates);
-    doc.doc.on('update', () => {
+    setNumUpdates(getNumRecords());
+    doc.on('update', () => {
       setTimeout(refreshNumUpdates, 1500);
     });
 
     const state = EditorState.create({
-      doc: ydoc.getText().toString(),
+      doc: doc.getText().toString(),
       extensions: [
         EditorView.lineWrapping,
         EditorView.contentAttributes.of({
@@ -56,7 +56,7 @@ function Editor() {
         keymap.of([...defaultKeymap, ...historyKeymap]),
         scrollPastEnd(),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        yCollab(ydoc.getText(), null),
+        yCollab(doc.getText(), null),
       ],
     });
     editorView = new EditorView({ state, parent: editorDiv });
@@ -65,7 +65,10 @@ function Editor() {
   onCleanup(() => {
     setNumUpdates(null);
     editorView?.destroy();
-    syncedDoc()?.finish();
+    const doc = syncedDoc();
+    if (doc) {
+      closeDoc(doc);
+    }
   });
 
   return (

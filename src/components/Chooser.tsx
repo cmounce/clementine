@@ -12,7 +12,7 @@ function Chooser() {
   const { setFileId } = useNavbar();
   onMount(() => setFileId(null));
 
-  const docsMap = getDocsMap(defaultVault.doc);
+  const docsMap = getDocsMap(defaultVault);
 
   const computeDocsList = () => {
     const result: DocInfo[] = [];

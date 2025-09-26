@@ -3,7 +3,7 @@ import * as Y from 'yjs';
 import { openDB, type DBSchema } from 'idb';
 import { assert, generateId } from './util';
 import { getDocsMap, getVaultMap, type DocMap } from './vault';
-import { debugLog } from './components/Debug';
+import { openDoc } from './persistence';
 
 const DB_NAME = 'synced-docs';
 export const LOCAL_DELTA_STORE = 'local-updates';
@@ -35,76 +35,6 @@ export const docsDb = await openDB<DocsDatabase>(DB_NAME, 3, {
   },
 });
 
-export class LocalDocument {
-  readonly id: string;
-  readonly doc: Y.Doc;
-  private updates: Uint8Array[];
-  private totalUpdates: number;
-
-  private constructor(id: string, ydoc: Y.Doc) {
-    this.id = id;
-    this.doc = ydoc;
-    this.updates = [];
-    this.totalUpdates = 0;
-
-    const flush = _.debounce(() => this.flush(), 1000);
-    this.doc.on('update', (update: Uint8Array) => {
-      this.updates.push(update);
-      flush();
-    });
-  }
-
-  get numUpdates(): number {
-    return this.totalUpdates;
-  }
-
-  public static async load(id: string): Promise<LocalDocument> {
-    // Build Y.Doc from records on disk
-    const startMs = performance.now();
-    const updates: Uint8Array[] = await docsDb.getAll(
-      LOCAL_DELTA_STORE,
-      IDBKeyRange.bound([id, -Infinity], [id, Infinity])
-    );
-    const loadedMs = performance.now();
-    const mergedUpdate = Y.mergeUpdates(updates);
-    const mergedMs = performance.now();
-    const ydoc = new Y.Doc();
-    Y.applyUpdate(ydoc, mergedUpdate);
-    const appliedMs = performance.now();
-
-    // Build LocalDocument instance
-    const result = new LocalDocument(id, ydoc);
-    result.totalUpdates = updates.length;
-
-    // Emit debug logs
-    const timings = [loadedMs - startMs, mergedMs - loadedMs, appliedMs - mergedMs];
-    const sizes = _.sortBy(updates.map((x) => x.length));
-    const quartiles = _.range(5).map((x) => {
-      const i = Math.round((sizes.length - 1) * (x / 4));
-      return sizes[i];
-    });
-    debugLog(`Doc ${id}: load/merge/apply timings in ms`, timings);
-    debugLog(`${updates.length} updates, quartiles in bytes`, quartiles);
-    return result;
-  }
-
-  public async flush(): Promise<void> {
-    const batch = this.updates;
-    this.updates = [];
-    if (batch.length > 0) {
-      const update = Y.mergeUpdates(batch);
-      const key: LocalDeltaKey = [this.id, new Date().valueOf()];
-      await docsDb.add(LOCAL_DELTA_STORE, update, key);
-      this.totalUpdates += 1;
-    }
-  }
-
-  public async finish(): Promise<void> {
-    await this.flush();
-    this.doc.destroy();
-  }
-}
-
 async function getOrCreateVaultDoc() {
   const records = await docsDb.getAll(VAULT_STORE);
   if (records.length > 1) {
@@ -120,8 +50,8 @@ async function getOrCreateVaultDoc() {
   if (!id) {
     throw new Error("Vault record didn't have id");
   }
-  const vault = await LocalDocument.load(id);
-  const vaultMap = getVaultMap(vault.doc);
+  const vault = await openDoc(id);
+  const vaultMap = getVaultMap(vault);
   if (!vaultMap.has('id')) {
     vaultMap.set('id', id);
   }
@@ -141,9 +71,8 @@ async function getOrCreateVaultDoc() {
 }
 
 export const defaultVault = await getOrCreateVaultDoc();
-// console.log(defaultVault.doc.getMap().toJSON())
 
-const docsMap = getDocsMap(defaultVault.doc);
+const docsMap = getDocsMap(defaultVault);
 if (docsMap.size === 0) {
   console.log('Running vault migration...');
   for (const oldKey of ['foo', 'bar', 'baz']) {

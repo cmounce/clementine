@@ -2,71 +2,65 @@ import * as Y from 'yjs';
 import { docsDb, LOCAL_DELTA_STORE } from './sync';
 import { assert } from './util';
 import _ from 'lodash';
+import { debugLog } from './components/Debug';
 
-const COMPACTION_THRESHOLD = 200;
+const COMPACTION_THRESHOLD = 50;
 
 export async function openDoc(id: string): Promise<Y.Doc> {
   // Return existing doc if we still have it open
   const previousState = idToState.get(id);
   if (previousState) {
     previousState.refCount += 1;
-    return previousState.ydoc;
+    return previousState.savedDoc.ydoc;
   }
 
-  const state = await initialLoad(id);
+  const state: State = {
+    refCount: 1,
+    savedDoc: new SavedDoc(id),
+  };
   idToState.set(id, state);
-  docToState.set(state.ydoc, state);
+  docToId.set(state.savedDoc.ydoc, id);
+  await state.savedDoc.connect();
+  debugLog(`Opened doc ${id}`);
 
-  return state.ydoc;
+  return state.savedDoc.ydoc;
+}
+
+export function getDocStats(doc: Y.Doc) {
+  const id = docToId.get(doc);
+  assert(id, 'Document is not already open');
+  const state = idToState.get(id)!;
+  return state.savedDoc.getInfo();
 }
 
 export function closeDoc(doc: Y.Doc) {
-  const state = docToState.get(doc);
-  assert(state, 'Document is not already open');
+  const id = docToId.get(doc);
+  assert(id, 'Document is not already open');
+  const state = idToState.get(id)!;
 
   state.refCount -= 1;
   if (state.refCount <= 0) {
-    idToState.delete(state.id);
-    docToState.delete(doc);
-    doc.destroy();
+    idToState.delete(id);
+    docToId.delete(doc);
+    state.savedDoc.flush().then(() => doc.destroy());
   }
+  debugLog(`Closed doc ${id} (refcount ${state.refCount})`);
 }
 
+const docToId = new Map<Y.Doc, string>();
 const idToState = new Map<string, State>();
-const docToState = new Map<Y.Doc, State>();
 
 type State = {
-  // TODO: Move more of this into class
-  id: string;
-  deltaBuffer: Uint8Array[];
-  numRecords: number;
   refCount: number;
-  ydoc: Y.Doc;
+  savedDoc: SavedDoc;
 };
 
-async function initialLoad(id: string): Promise<State> {
-  const ydoc = new Y.Doc();
-  const records = await docsDb.getAll(
-    LOCAL_DELTA_STORE,
-    IDBKeyRange.bound([id, -Infinity], [id, Infinity])
-  );
-  Y.applyUpdate(ydoc, Y.mergeUpdates(records));
-  return {
-    id,
-    deltaBuffer: [],
-    numRecords: records.length,
-    refCount: 1,
-    ydoc,
-  };
-}
-
-// @ts-ignore
-class BufferedWriter {
+class SavedDoc {
+  readonly docId: string;
+  readonly ydoc: Y.Doc;
   private deltaBuffer: Uint8Array[];
-  private docId: string;
   private numRecords: number;
   private debouncedFlush: () => void;
-  private ydoc: Y.Doc;
 
   constructor(docId: string) {
     this.deltaBuffer = [];
@@ -80,6 +74,10 @@ class BufferedWriter {
       { maxWait: 30_000 }
     );
     this.ydoc = new Y.Doc();
+  }
+
+  public getInfo(): { numRecords: number } {
+    return { numRecords: this.numRecords };
   }
 
   public async connect(): Promise<Y.Doc> {
@@ -129,6 +127,9 @@ class BufferedWriter {
     if (this.numRecords < COMPACTION_THRESHOLD) {
       return;
     }
+    debugLog(
+      `Running compaction on doc ${this.docId}, ${this.numRecords} records...`
+    );
     const tx = docsDb.transaction(LOCAL_DELTA_STORE, 'readwrite');
 
     // Make sure we're not missing anything by pulling in all changes.

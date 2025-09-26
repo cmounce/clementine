@@ -34,7 +34,7 @@ function Layout(props: any) {
   const navigate = useNavigate();
   const [fileId, setFileId] = createSignal<string | null>(null);
   const [numUpdates, setNumUpdates] = createSignal<number | null>(null);
-  const docsMap = getDocsMap(defaultVault.doc);
+  const docsMap = getDocsMap(defaultVault);
 
   const title = () => {
     const id = fileId();

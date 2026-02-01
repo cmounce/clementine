@@ -17,9 +17,12 @@ import { useNavbar } from './App';
 import { useParams } from '@solidjs/router';
 import _ from 'lodash';
 import { closeDoc, getDocStats, openDoc } from '../persistence';
+import { assert } from '../util';
 
 function Editor() {
   const { id: fileId } = useParams();
+  assert(fileId, 'Editor component loaded without a file');
+
   const { setFileId, setNumUpdates } = useNavbar();
   onMount(() => {
     setFileId(fileId);

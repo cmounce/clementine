@@ -1,4 +1,5 @@
 # Clementine
+
 Clementine is a no-frills, self-hosted plain text editor.
 It doesn't do fancy Markdown formatting or hyperlinks, though you can certainly still use it to write Markdown!
 All it does is get out of your way and give you a place to type.
@@ -8,6 +9,7 @@ Users beware: Clementine is currently at a very early stage of development!
 I can't guarantee it won't eat your work, and it (just barely) meets my own needs.
 
 ## Planned features
+
 Clementine is already architected to be offline-friendly: all data is in IndexedDB.
 It's not a proper PWA yet, so you do need an internet connection on mobile in order to initially load the page.
 But once loaded, no further connection is needed.
